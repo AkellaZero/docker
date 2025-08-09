@@ -37,7 +37,7 @@ services:
       ZBX_SERVER_HOST: backend
       PHP_TZ: Europe/Moscow
     ports:
-      - "8080:8080"
+      - "80:8080"
     restart: unless-stopped
 
   grafana:
