@@ -16,7 +16,6 @@ RUN apk update && \
 RUN pip3 install --no-cache-dir \
     requests \
     pandas \
-    numpy \
-    psycopg2-binary
+    numpy
 
 USER zabbix
