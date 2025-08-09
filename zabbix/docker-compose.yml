@@ -1,34 +1,57 @@
+version: "3.8"
+
 services:
   database:
     container_name: zabbix-db
     image: postgres:17-alpine
+    restart: unless-stopped
+    volumes:
+      - database:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix
-    volumes:
-      - database:/var/lib/postgresql/data
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zabbix"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     container_name: zabbix-server
     build:
-      context: ./zabbix-server
+      context: ./own-zabbix-server
       dockerfile: Dockerfile
+    image: zabbix/zabbix-server-pgsql:alpine-latest
+    restart: unless-stopped
+    depends_on:
+      - database
+    ports:
+      - "10051:10051"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /etc/timezone:/etc/timezone:ro
+      - externalscripts:/usr/lib/zabbix/externalscripts
     environment:
       DB_SERVER_HOST: database
       POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix
-    depends_on:
-      - database
-    ports:
-      - "10051:10051"
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "zabbix_server -V || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 3
 
   frontend:
     container_name: zabbix-web
     image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - database
+    ports:
+      - "80:8080"
     environment:
       DB_SERVER_HOST: database
       POSTGRES_DB: zabbix
@@ -36,23 +59,31 @@ services:
       POSTGRES_PASSWORD: zabbix
       ZBX_SERVER_HOST: backend
       PHP_TZ: Europe/Moscow
-    ports:
-      - "80:8080"
-    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   grafana:
-    image: grafana/grafana:latest
     container_name: zabbix-grafana
-    environment:
-      - GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+    image: grafana/grafana:latest
+    restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
       - grafana:/var/lib/grafana
-    restart: unless-stopped
+    environment:
+      GF_INSTALL_PLUGINS: alexanderzobnin-zabbix-app
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   database:
   grafana:
+  externalscripts:
