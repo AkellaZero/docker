@@ -4,6 +4,8 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
+    networks:
+      - default
     volumes:
       - storage:/etc/nginx/conf.d
     restart: unless-stopped
