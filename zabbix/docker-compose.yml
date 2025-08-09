@@ -47,8 +47,6 @@ services:
       - GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_SERVER_ROOT_URL=http://zabbix-grafana/grafana/
-      - GF_SERVER_SERVE_FROM_SUB_PATH=true
     ports:
       - "3000:3000"
     volumes:
