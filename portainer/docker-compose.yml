@@ -1,5 +1,6 @@
 services:
-  backend:
+  portainer:
+    container_name: portainer
     image: portainer/portainer-ce:latest
     restart: unless-stopped
     ports:
@@ -7,14 +8,8 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - portainer_storage:/data
-    networks:
-      - proxy
     environment:
       TZ: "Europe/Moscow"
 
 volumes:
   portainer_storage:
-
-networks:
-  proxy:
-    external: true
