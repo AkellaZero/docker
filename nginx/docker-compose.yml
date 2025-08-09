@@ -4,7 +4,6 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
-    network_mode: bridge
     volumes:
       - storage:/etc/nginx/conf.d
     restart: unless-stopped
