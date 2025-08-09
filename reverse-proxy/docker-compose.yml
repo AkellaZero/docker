@@ -1,5 +1,5 @@
 services:
-  nginx:
+  reverse-proxy:
     container_name: reverse-proxy
     image: nginx:alpine
     ports:
