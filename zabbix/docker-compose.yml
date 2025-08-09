@@ -1,73 +1,58 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: zabbix-postgres
+  database:
+    container_name: zabbix-db
+    image: postgres:17-alpine
     environment:
+      POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix
-      POSTGRES_DB: zabbix
     volumes:
-      - pgdata:/var/lib/postgresql/data
-    networks:
-      - internal
+      - database:/var/lib/postgresql/data
     restart: unless-stopped
 
-  zabbix-server:
+  backend:
+    container_name: zabbix-server
     build:
       context: ./zabbix-server
       dockerfile: Dockerfile
-    container_name: zabbix-server
     environment:
-      DB_SERVER_HOST: postgres
+      DB_SERVER_HOST: database
+      POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix
-      POSTGRES_DB: zabbix
     depends_on:
-      - postgres
+      - database
     ports:
       - "10051:10051"
-    networks:
-      - internal
     restart: unless-stopped
 
-  zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
+  frontend:
     container_name: zabbix-web
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-latest
     environment:
-      DB_SERVER_HOST: postgres
+      DB_SERVER_HOST: database
+      POSTGRES_DB: zabbix
       POSTGRES_USER: zabbix
       POSTGRES_PASSWORD: zabbix
-      POSTGRES_DB: zabbix
-      ZBX_SERVER_HOST: zabbix-server
-      PHP_TZ: Europe/Amsterdam
-    expose:
-      - "8080"
-    networks:
-      - internal
-      - proxy
+      ZBX_SERVER_HOST: backend
+      PHP_TZ: Europe/Moscow
+    ports:
+      - "8080:8080"
     restart: unless-stopped
 
   grafana:
     image: grafana/grafana:latest
-    container_name: grafana
+    container_name: zabbix-grafana
     environment:
       - GF_INSTALL_PLUGINS=alexanderzobnin-zabbix-app
-    expose:
-      - "3000"
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    ports:
+      - "3000:3000"
     volumes:
-      - grafana-storage:/var/lib/grafana
-    networks:
-      - internal
-      - proxy
+      - grafana:/var/lib/grafana
     restart: unless-stopped
 
 volumes:
-  pgdata:
-  grafana-storage:
-
-networks:
-  internal:
-  proxy:
-    external: true
+  database:
+  grafana:
